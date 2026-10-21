@@ -17,6 +17,8 @@ jobs:
       - run: python3 -m py_compile seed/worker.py
       - run: node --check src/main/resources/web/app.js
       - run: node tests/cache.cjs
+      - run: node tests/refresh.cjs
+      - run: python3 tests/worker_reconnect.py
       - run: python3 tests/seed_smoke.py seed/build/libgpxbiomes.so
       - uses: actions/upload-artifact@v4
         with:
@@ -29,6 +31,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: WebMapMinecraft
@@ -38,4 +41,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" dist/*.jar --title "WebMapMinecraft $RELEASE_TAG" --prerelease --notes "Version initiale expérimentale. Carte privée en lecture seule ; aperçu arithmétique facultatif sans génération de chunks. Lire README et VALIDATION avant installation. Java 25+, Paper 26.3. Aucune donnée de serveur incluse."
+        run: gh release create "$RELEASE_TAG" dist/*.jar --title "WebMapMinecraft $RELEASE_TAG" --prerelease --notes-file CHANGELOG.md

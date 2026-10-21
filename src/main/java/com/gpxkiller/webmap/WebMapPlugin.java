@@ -34,7 +34,7 @@ public final class WebMapPlugin extends JavaPlugin {
  private byte[] auth;
  private long lastWarning;
  private int maxTiles;
- private boolean stopping;
+ private volatile boolean stopping;
  @Override public void onEnable(){
   saveDefaultConfig(); root=getDataFolder().toPath().resolve("export").toAbsolutePath().normalize();
   maxTiles=Math.max(1,Math.min(1000000,getConfig().getInt("max-tiles-per-world",65536)));
@@ -52,14 +52,15 @@ public final class WebMapPlugin extends JavaPlugin {
  }
  private static ThreadPoolExecutor pool(int n,int capacity,String name){return new ThreadPoolExecutor(n,n,0,TimeUnit.SECONDS,new ArrayBlockingQueue<>(capacity),r->{Thread t=new Thread(r,name);t.setDaemon(true);return t;},new ThreadPoolExecutor.AbortPolicy());}
  private List<World> worlds(){List<String> allow=getConfig().getStringList("worlds");return getServer().getWorlds().stream().filter(w->allow.isEmpty()||allow.contains(w.getName())).toList();}
+ private boolean supportsPreview(World w){return getConfig().getBoolean("seed-preview",false)&&w.getGenerator()==null&&(w.getWorldType()==WorldType.NORMAL||w.getWorldType()==WorldType.LARGE_BIOMES);}
  private void refresh(){
   List<Map<String,Object>> ws=new ArrayList<>(),generation=new ArrayList<>(),players=new ArrayList<>();Set<String> ids=new HashSet<>();
   for(World w:worlds()){
    UUID id=w.getUID();ids.add(id.toString());Set<String> known=tiles.computeIfAbsent(id,k->scan(k));
    for(Chunk c:w.getLoadedChunks()){String key=id+"/"+c.getX()+"_"+c.getZ();if(pending.size()<2048&&queued.add(key))pending.add(c);}
-   Map<String,Object> row=new LinkedHashMap<>();row.put("id",id.toString());row.put("name",w.getName());row.put("key",w.getEnvironment().name());row.put("spawnX",w.getSpawnLocation().getBlockX());row.put("spawnZ",w.getSpawnLocation().getBlockZ());row.put("tiles",new ArrayList<>(known));ws.add(row);
+   Map<String,Object> row=new LinkedHashMap<>();row.put("id",id.toString());row.put("name",w.getName());row.put("key",w.getEnvironment().name());row.put("spawnX",w.getSpawnLocation().getBlockX());row.put("spawnZ",w.getSpawnLocation().getBlockZ());row.put("tiles",new ArrayList<>(known));row.put("previewEnabled",supportsPreview(w));ws.add(row);
    // Private worker input: never included in HTTP state or served as a file.
-   Map<String,Object> gen=new LinkedHashMap<>(row);gen.remove("tiles");gen.put("seed",Long.toString(w.getSeed()));gen.put("large",w.getWorldType()==WorldType.LARGE_BIOMES);gen.put("version",Bukkit.getMinecraftVersion());gen.put("supported",getConfig().getBoolean("seed-preview",false)&&w.getGenerator()==null&&(w.getWorldType()==WorldType.NORMAL||w.getWorldType()==WorldType.LARGE_BIOMES));generation.add(gen);
+   Map<String,Object> gen=new LinkedHashMap<>(row);gen.remove("tiles");gen.put("seed",Long.toString(w.getSeed()));gen.put("large",w.getWorldType()==WorldType.LARGE_BIOMES);gen.put("version",Bukkit.getMinecraftVersion());gen.put("supported",supportsPreview(w));generation.add(gen);
    if(getConfig().getBoolean("show-players",false))for(var p:w.getPlayers())if(!p.hasMetadata("vanished")){var l=p.getLocation();players.add(Map.of("id",p.getUniqueId().toString(),"name",p.getName(),"world",id.toString(),"x",l.getX(),"z",l.getZ(),"status","online"));}
   }
   worldIds=Set.copyOf(ids);byte[] bytes=json.toJson(Map.of("generatedAt",System.currentTimeMillis(),"worlds",ws,"players",players)).getBytes(StandardCharsets.UTF_8);state.set(bytes);

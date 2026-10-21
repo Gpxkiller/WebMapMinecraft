@@ -1,6 +1,6 @@
 """Linux arithmetic-only map worker. Never opens a Minecraft world directory."""
 from pathlib import Path
-import ctypes,json,os,fcntl,zlib,struct,time,math,argparse,uuid
+import ctypes,json,os,fcntl,zlib,struct,time,math,argparse,uuid,sys
 ROOT=Path(".")
 SPAWN_RADIUS=16
 PLAYER_RADIUS=2
@@ -118,10 +118,21 @@ def run(export,library):
    count+=1
   health=ROOT/'health.json';temp=health.with_suffix('.tmp');temp.write_text(json.dumps(dict(calculated=count,at=time.time(),minecraftStarted=False)));temp.replace(health)
   return count
+def watch(export,library,stop=lambda:False):
+ # Export files may not exist yet at startup, or be unavailable during restart.
+ # Retry without printing their content (which includes the private seed).
+ last_warning=-60.0
+ while not stop():
+  try:run(export,library)
+  except (OSError,ValueError,TypeError,KeyError):
+   now=time.monotonic()
+   if now-last_warning>=60:
+    print('Map export not ready; retrying. No world files are accessed.',file=sys.stderr,flush=True)
+    last_warning=now
+  if not stop():time.sleep(3)
+
 if __name__=='__main__':
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--export',required=True);parser.add_argument('--library',default=str(Path(__file__).with_name('libgpxbiomes.so')));parser.add_argument('--watch',action='store_true');args=parser.parse_args()
- while True:
-  run(args.export,args.library)
-  if not args.watch:break
-  time.sleep(3)
+ if args.watch:watch(args.export,args.library)
+ else:run(args.export,args.library)
 

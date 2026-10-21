@@ -1,6 +1,19 @@
-# Validation 0.1.1
+# Validation 0.1.2
 
 Version initiale expérimentale, pas une garantie d’absence de bug.
+
+## Audit 0.1.2 (21 octobre 2026)
+
+- Quinze scénarios navigateur évaluent le script complet : priorité terrain réel, absence de requêtes preview désactivées, reprise après erreur/timeout, refus d’accès et réponses tardives, DOM stable pendant clics, révisions dans la même minute, retrait du dernier monde, JSON invalide, URL de dimension, isolation onglets, réel peint après les previews et requêtes non superposées. Onze cas échouaient sur 0.1.1 avant correction ; l’isolation simple des onglets passait déjà.
+- Quatre contextes indépendants, 180 cycles virtuels chacun : zooms, dimensions, erreurs, retries et saturation. Ce n’est pas 180 minutes physiques d’essai.
+- Trois vrais onglets sur le serveur de fixture local (données inventées) : Overworld/Nether/End distincts, rechargement et reconnexion conservant le Nether, refus d’accès masquant les trois cartes et les noms, retour réseau, terrain réel modifié au-dessus du fond calculé. Les boutons du laboratoire ne sont pas inclus dans les pages du plugin.
+- Worker : démarrage sans export et JSON transitoire ne terminent plus la boucle de surveillance ; récupération vérifiée, avertissement borné sans données privées. Le test Windows simule run() et ne prétend pas tester flock ; CI Linux exerce le worker natif et le verrou avec le smoke test.
+- HTTP Paper isolé : tests précédents conservés, mauvais mot de passe refusé, vingt clients parallèles, indicateur previewEnabled explicite. Pas d’installation ni redémarrage du serveur de production pour cette livraison GitHub.
+
+Tests complémentaires : `node tests/refresh.cjs`, `python3 tests/worker_reconnect.py`.
+Laboratoire navigateur facultatif : `node tests/browser-fixture.cjs`, puis ouvrir http://127.0.0.1:29129 dans plusieurs onglets. Uniquement des données fictives, écoute loopback, aucun compte du serveur réel.
+
+## Historique de la version initiale
 
 Correction 0.1.1 : bouton de sortie du plein écran déplacé dans la carte pour rester visible. Entrée et sortie réellement cliquées dans le navigateur, zoom et sélection de monde exercés sur la fixture locale ; aucun joueur réel utilisé.
 
