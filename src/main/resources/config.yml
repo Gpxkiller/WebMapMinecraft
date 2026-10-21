@@ -1,0 +1,14 @@
+# HTTP stays on loopback. Put an HTTPS reverse proxy in front of it.
+port: 9127
+# Supply WEBMAP_PASSWORD in the server environment (minimum 16 characters).
+# No password is generated or printed. Without it the HTTP listener stays off.
+username: admin
+show-players: false
+# Enable ONLY for default vanilla generation matching Minecraft 26.3.
+# Custom datapacks/generators and older imported terrain cannot be predicted.
+seed-preview: false
+# Empty means all worlds. Names must match exactly.
+worlds: []
+# Each cycle snapshots only chunks ALREADY loaded by the game.
+refresh-seconds: 60
+max-tiles-per-world: 65536

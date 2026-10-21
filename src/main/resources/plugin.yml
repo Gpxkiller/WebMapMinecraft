@@ -1,0 +1,6 @@
+name: WebMapMinecraft
+version: 0.1.0
+main: com.gpxkiller.webmap.WebMapPlugin
+api-version: '26.2'
+description: Private read-only browser map, without chunk generation.
+author: Gpxkiller

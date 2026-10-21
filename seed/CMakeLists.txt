@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+project(webmap_biomes C)
+add_library(gpxbiomes SHARED biomes.c relief.c surface.c palette.c vendor/biomenoise.c vendor/biomes.c vendor/generator.c vendor/layers.c vendor/noise.c vendor/terrainnoise.c)
+target_include_directories(gpxbiomes PRIVATE vendor)
+target_link_libraries(gpxbiomes PRIVATE m)
+target_compile_options(gpxbiomes PRIVATE -O2)

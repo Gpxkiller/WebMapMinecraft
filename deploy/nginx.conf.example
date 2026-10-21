@@ -1,0 +1,7 @@
+# Inside your own TLS-enabled server block. Configure certificate separately.
+location / {
+    proxy_pass http://127.0.0.1:9127;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    add_header Cache-Control "private, no-store" always;
+}
