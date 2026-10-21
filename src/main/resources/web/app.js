@@ -30,7 +30,7 @@ function abortRefresh(){
  refreshing=false;
 }
 function showConnectionProblem(){
- document.querySelector('#retry').hidden=locked||networkDown;
+ document.querySelector('#retry').hidden=locked;
  if(!locked)status.textContent=networkDown?'Hors ligne · Le dernier terrain reste affiché.':'Connexion interrompue ou relevé indisponible · Nouvelle tentative automatique. Le dernier terrain reste affiché.';
  playerButtons();requestDraw();
 }
@@ -158,13 +158,14 @@ async function refresh(force=false){
   playerButtons();requestDraw();
  }catch(e){
   if(activeRequest!==request)return;
+  if(navigator.onLine===false)networkDown=true;
   connectionHealthy=false;pauseImages();refreshFailures++;
   retryAfter=clock()+Math.min(60000,10000*2**Math.min(3,refreshFailures-1));showConnectionProblem();
  }
  finally{clearTimeout(request.timeout);if(activeRequest===request){activeRequest=null;refreshing=false;}}
 }
-function resume(){
- suspended=false;networkDown=navigator.onLine===false;
+function resume(allowOffline=false){
+ suspended=false;networkDown=navigator.onLine===false&&!allowOffline;
  if(networkDown){showConnectionProblem();return;}
  connectionHealthy=false;pauseImages();retryAfter=0;refreshFailures=0;
  for(const entry of images.values()){entry.retry=0;entry.failures=0;}
@@ -174,7 +175,7 @@ function scale(f,x=canvas.width/2,y=canvas.height/2){if(locked)return;const next
 select.onchange=()=>{if(locked)return;world=select.value;center();saveWorld();};
 document.querySelector('#minus').onclick=()=>scale(.5);document.querySelector('#plus').onclick=()=>scale(2);document.querySelector('#center').onclick=center;
 document.querySelector('#reconnect').onclick=()=>location.reload();
-document.querySelector('#retry').onclick=resume;
+document.querySelector('#retry').onclick=()=>resume(true);
 document.querySelector('#full').onclick=async()=>{if(locked)return;try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('#map').requestFullscreen();}catch{status.textContent='Plein écran indisponible dans ce navigateur.';}};
 canvas.addEventListener('wheel',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();scale(e.deltaY<0?1.25:.8,e.clientX-r.left,e.clientY-r.top);},{passive:false});
 canvas.onpointerdown=e=>{if(locked)return;canvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY};};
@@ -182,9 +183,9 @@ canvas.onpointermove=e=>{if(drag&&!locked){pan.x-=(e.clientX-drag.x)/zoom;pan.z-
 canvas.onpointerup=canvas.onpointercancel=canvas.onlostpointercapture=()=>drag=null;
 window.addEventListener('resize',requestDraw);
 window.addEventListener('offline',()=>{networkDown=true;connectionHealthy=false;abortRefresh();pauseImages();showConnectionProblem();});
-window.addEventListener('online',resume);
+window.addEventListener('online',()=>resume());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resume();});
 window.addEventListener('pagehide',()=>{suspended=true;loseAccess();});
 window.addEventListener('pageshow',event=>{if(event.persisted)resume();});
 document.addEventListener('fullscreenchange',()=>{const active=!!document.fullscreenElement;document.querySelector('#full').textContent=active?'⛶ Quitter le plein écran':'⛶ Plein écran';document.querySelector('#full').setAttribute('aria-pressed',String(active));requestDraw();});
-setInterval(refresh,10000);setInterval(()=>{playerButtons();requestDraw();},11000);refresh();
+setInterval(refresh,10000);setInterval(()=>{playerButtons();requestDraw();},11000);if(networkDown)showConnectionProblem();else refresh();

@@ -52,6 +52,8 @@ Les erreurs répétées espacent les tentatives (10, 20, 40 puis 60 secondes max
 
 Le retour réseau, le retour sur un onglet et « Réessayer maintenant » lancent une nouvelle vérification sans attendre ce délai. Les relances utilisent une horloge monotone, indépendante d’un changement d’heure du PC. Les réponses d’une ancienne requête annulée sont ignorées. Une page mise dans le cache de navigation efface ses données privées avant de revérifier l’accès à son retour. Après refus d’accès, les tentatives automatiques s’arrêtent jusqu’à une reconnexion explicite ou un retour sur la page, afin de ne pas répéter les demandes d’authentification.
 
+L’indication « hors ligne » du navigateur reste un indice, pas une interdiction : « Réessayer maintenant » peut quand même vérifier un serveur local/LAN accessible sans Internet. Si cette tentative réussit, les actualisations reprennent ; si elle échoue et que le navigateur reste hors ligne, les tentatives automatiques restent suspendues.
+
 ## Limites de la version initiale
 
 Seuls les chunks visités/chargés depuis l’installation sont exportés. Aucun balayage forcé de monde. Plafond configurable de tuiles réelles ; une nouvelle zone au-delà du plafond reste non cartographiée. Le calcul d’aperçu est limité aux zones automatiques décrites ci-dessus (pas de file de génération infinie à la demande).

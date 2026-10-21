@@ -8,7 +8,7 @@
 - Temporisations monotones : un changement d’heure du PC ne bloque plus les relances d’images.
 - Requêtes précédentes annulées et réponses tardives ignorées lors d’une reprise.
 - Données privées effacées avant mise en cache de navigation ; accès revérifié au retour. Pas de demandes d’authentification répétées après refus d’accès.
-- Onze nouveaux scénarios, simulation de 24 heures sur quatre onglets et vrais essais de coupure/reconnexion sur laboratoire local.
+- Douze nouveaux scénarios, simulation de 24 heures sur quatre onglets et vrais essais de coupure/reconnexion sur laboratoire local. La reprise manuelle reste possible pour un serveur local/LAN malgré un faux indice « hors ligne » du navigateur.
 - Notice MIT incluse dans le JAR, en plus des sources du dépôt.
 
 ## 0.1.2 — 21 octobre 2026
