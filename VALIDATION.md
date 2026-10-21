@@ -1,6 +1,8 @@
-# Validation 0.1.0
+# Validation 0.1.1
 
 Version initiale expérimentale, pas une garantie d’absence de bug.
+
+Correction 0.1.1 : bouton de sortie du plein écran déplacé dans la carte pour rester visible. Entrée et sortie réellement cliquées dans le navigateur, zoom et sélection de monde exercés sur la fixture locale ; aucun joueur réel utilisé.
 
 - Compilation Java `--release 25` contre Paper API 26.2 ; démarrage réel isolé Paper 26.3-175, plugin chargé, export de snapshots réel vérifié.
 - Test HTTP isolé : 401 sans connexion, état authentifié, aucun joueur sans opt-in, aucune seed dans l’état, dossiers privés et chemins interdits refusés, POST refusé, PNG et trois ressources web accessibles.
