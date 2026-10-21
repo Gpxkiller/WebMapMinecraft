@@ -1,5 +1,11 @@
 # Changements
 
+## 0.1.4 — 21 octobre 2026
+
+- Un changement de dimension ou un clic sur un joueur libère les téléchargements encore bloqués de l’ancienne dimension, sans supprimer le terrain déjà décodé.
+- Une interruption réseau termine le geste de déplacement en cours : la carte ne continue plus à glisser avec un ancien clic.
+- Trois nouveaux tests de régression et reprise de la simulation multi-onglets de 24 heures virtuelles, des coupures, des refus d’accès et des reconnexions.
+
 ## 0.1.3 — 21 octobre 2026
 
 - Statuts non actualisés et pastilles orange pendant une panne ou après trois minutes sans nouvel export observé.

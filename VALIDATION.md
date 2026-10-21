@@ -1,6 +1,13 @@
-# Validation 0.1.3
+# Validation 0.1.4
 
 Version initiale expérimentale, pas une garantie d’absence de bug.
+
+## Audit 0.1.4 (21 octobre 2026)
+
+- Deux défauts reproduits sur 0.1.3 avant correction : les douze téléchargements bloqués d’une dimension retenaient les places lors d’un changement de monde ou d’un clic joueur ; un geste de déplacement restait actif après une coupure réseau.
+- Trois régressions dans `node tests/navigation-network.cjs` vérifient ces chemins, la conservation des images décodées et le compteur de requêtes borné.
+- Les douze tests de session et quinze tests de rafraîchissement précédents passent, avec quatre contextes de 180 cycles et quatre contextes de 24 heures virtuelles (8640 pas chacun). Ce ne sont pas 24 heures physiques, ni une mesure mémoire d’un navigateur réel.
+- Aucun changement au calcul du terrain, à sa priorité sur l’aperçu, aux permissions ou au serveur de production. Publication GitHub uniquement.
 
 ## Audit 0.1.3 (21 octobre 2026)
 

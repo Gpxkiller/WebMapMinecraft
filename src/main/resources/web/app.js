@@ -23,7 +23,12 @@ function cancelImages(){
  frame=0;
 }
 function pauseImages(){
+ drag=null;
  for(const entry of images.values())if(entry.busy){entry.cancel?.();pending--;}
+}
+function releaseOtherWorldDownloads(){
+ // Preserve decoded terrain, while freeing slots held by a previous dimension.
+ for(const[key,entry]of images)if(key.split('/')[1]!==world&&entry.busy){entry.cancel?.();pending--;}
 }
 function abortRefresh(){
  if(activeRequest){clearTimeout(activeRequest.timeout);activeRequest.controller.abort();activeRequest=null;}
@@ -73,6 +78,7 @@ function previewInRange(w,x,z){
  return data.players.some(p=>p.world===w.id&&Math.max(Math.abs(x-Math.floor(p.x/256)),Math.abs(z-Math.floor(p.z/256)))<=2);
 }
 function draw(){
+ releaseOtherWorldDownloads();
  const b=canvas.getBoundingClientRect();
  if(canvas.width!==Math.round(b.width)||canvas.height!==Math.round(b.height)){canvas.width=Math.round(b.width);canvas.height=Math.round(b.height);}
  ctx.fillStyle='#101d25';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;
