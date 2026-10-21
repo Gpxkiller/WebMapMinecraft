@@ -1,6 +1,16 @@
-# Validation 0.1.2
+# Validation 0.1.3
 
 Version initiale expérimentale, pas une garantie d’absence de bug.
+
+## Audit 0.1.3 (21 octobre 2026)
+
+- Huit régressions reproduites sur 0.1.2 puis corrigées : recul de l’horloge, travail réseau hors ligne, reprise réseau/retour onglet non immédiats, statuts verts pendant panne/export figé, absence d’espacement des échecs et ancienne page en cache non masquée avant nouveau contrôle.
+- Onze nouveaux scénarios (`node tests/long-session.cjs`), incluant corps JSON tardif, absence de prompts répétés et retry manuel. Les quinze scénarios précédents et les quatre contextes de 180 cycles sont conservés ; le test de timeout attend désormais le nouveau délai de reprise, et le test de réauthentification déclenche explicitement la reconnexion.
+- `node tests/soak.cjs` : quatre contextes pendant 24 heures **virtuelles** chacun, 8640 pas de 10 secondes, intervalles de l’application actifs, changements de monde/zoom, coupures d’une heure, pannes prolongées, refus d’accès et retour de cache. 25472 réponses traitées, 5760 pas hors ligne, au plus quatre temporisations et six images sur cette fixture (limite générale 8192 toujours testée séparément). Ce ne sont pas 24 heures physiques de navigateur ni un profilage de mémoire du navigateur.
+- Les fixtures ne contiennent ni seed, ni compte, ni coordonnées d’un vrai serveur. Aucun déploiement VPS pour cette livraison GitHub.
+- Essai réel avec trois onglets : après trois minutes d’export volontairement figé, statuts non actualisés observés dans les trois dimensions. Le serveur Node local a ensuite été réellement arrêté (connexion refusée, pas seulement un code 503) ; le dernier terrain est resté visible, avec avertissement, pastille orange et bouton de nouvelle tentative. Le contrôle Paper isolé et ses vingt lecteurs simultanés passe aussi avec le JAR 0.1.3.
+
+Commandes nouvelles : `node tests/long-session.cjs`, `node tests/soak.cjs`.
 
 ## Audit 0.1.2 (21 octobre 2026)
 

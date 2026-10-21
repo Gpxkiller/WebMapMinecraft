@@ -18,6 +18,8 @@ jobs:
       - run: node --check src/main/resources/web/app.js
       - run: node tests/cache.cjs
       - run: node tests/refresh.cjs
+      - run: node tests/long-session.cjs
+      - run: node tests/soak.cjs
       - run: python3 tests/worker_reconnect.py
       - run: python3 tests/seed_smoke.py seed/build/libgpxbiomes.so
       - uses: actions/upload-artifact@v4

@@ -6,6 +6,10 @@ const images=new Map(),limit=8192;
 let data={worlds:[],players:[]},world=new URL(location.href).searchParams.get('world')||'';
 let zoom=1,pan={x:0,z:0},pending=0,drag=null,refreshing=false,locked=false;
 let imageEpoch=0,frame=0,viewReady=false,optionSignature='';
+let networkDown=navigator.onLine===false,connectionHealthy=!networkDown,suspended=false;
+let activeRequest=null,retryAfter=0,refreshFailures=0,lastGeneratedAt=null,lastExportChanged=performance.now();
+const clock=()=>performance.now();
+const fresh=()=>connectionHealthy&&!networkDown&&clock()-lastExportChanged<180000;
 const current=()=>data.worlds.find(w=>w.id===world);
 
 function requestDraw(){
@@ -18,9 +22,21 @@ function cancelImages(){
  if(frame)cancelAnimationFrame(frame);
  frame=0;
 }
+function pauseImages(){
+ for(const entry of images.values())if(entry.busy){entry.cancel?.();pending--;}
+}
+function abortRefresh(){
+ if(activeRequest){clearTimeout(activeRequest.timeout);activeRequest.controller.abort();activeRequest=null;}
+ refreshing=false;
+}
+function showConnectionProblem(){
+ document.querySelector('#retry').hidden=locked||networkDown;
+ if(!locked)status.textContent=networkDown?'Hors ligne · Le dernier terrain reste affiché.':'Connexion interrompue ou relevé indisponible · Nouvelle tentative automatique. Le dernier terrain reste affiché.';
+ playerButtons();requestDraw();
+}
 function tile(kind,id,x,z,revision){
  const key=kind+'/'+id+'/'+x+'_'+z,old=images.get(key);
- if(locked||old?.busy||old?.retry>Date.now()||(old?.image&&old.revision===revision))return old?.image;
+ if(locked||networkDown||!connectionHealthy||old?.busy||old?.retry>clock()||(old?.image&&old.revision===revision))return old?.image;
  if(pending>=12||(kind==='preview'&&pending>=8))return old?.image;
  if(!old&&images.size>=limit){
   for(const[k,v]of images){
@@ -40,12 +56,12 @@ function tile(kind,id,x,z,revision){
   entry.cancel=null;entry.busy=false;
   if(epoch!==imageEpoch)return;
   pending--;
-  if(ok){entry.image=im;entry.revision=revision;entry.retry=0;}
-  else entry.retry=Date.now()+10000;
+  if(ok){entry.image=im;entry.revision=revision;entry.retry=0;entry.failures=0;}
+  else{entry.failures=(entry.failures||0)+1;entry.retry=clock()+Math.min(60000,10000*2**Math.min(3,entry.failures-1));}
   requestDraw();
  };
  const timeout=setTimeout(()=>{settle(false);im.src='';},15000);
- entry.cancel=()=>{finished=true;clearTimeout(timeout);im.onload=im.onerror=null;im.src='';entry.busy=false;};
+ entry.cancel=()=>{finished=true;clearTimeout(timeout);im.onload=im.onerror=null;im.src='';entry.busy=false;entry.cancel=null;};
  im.onload=()=>settle(true);im.onerror=()=>settle(false);
  im.src='/api/'+kind+'/'+id+'/'+x+'_'+z+'.png?v='+revision;
  return entry.image;
@@ -77,7 +93,7 @@ function draw(){
  for(const[x,z]of real)paint('tile',x,z,16,data.generatedAt);
  for(const p of data.players)if(p.world===world){
   const x=canvas.width/2+(p.x-pan.x)*zoom,z=canvas.height/2+(p.z-pan.z)*zoom;
-  ctx.fillStyle=p.status==='online'?'#50df7e':p.status==='offline'?'#f05252':'#ffb545';ctx.beginPath();ctx.arc(x,z,5,0,7);ctx.fill();
+  ctx.fillStyle=!fresh()?'#ffb545':p.status==='online'?'#50df7e':p.status==='offline'?'#f05252':'#ffb545';ctx.beginPath();ctx.arc(x,z,5,0,7);ctx.fill();
   ctx.font='bold 13px system-ui';const width=ctx.measureText(p.name).width;
   ctx.fillStyle='#08120eee';ctx.fillRect(x+8,z-14,width+8,20);ctx.fillStyle='#ffdf55';ctx.fillText(p.name,x+12,z+1);
  }
@@ -106,45 +122,69 @@ function playerButtons(){
  for(const p of data.players){
   let b=existing.get(p.id);
   if(!b){b=document.createElement('button');b.dataset.player=p.id;b.onclick=()=>{const latest=data.players.find(row=>row.id===b.dataset.player);if(locked||!latest)return;world=latest.world;select.value=world;pan={x:latest.x,z:latest.z};viewReady=true;saveWorld();requestDraw();};list.append(b);}
-  const text=p.name+' · '+(p.status==='online'?'En ligne':p.status==='offline'?'Hors ligne':'État inconnu');if(b.textContent!==text)b.textContent=text;
+  const text=p.name+' · '+(!fresh()?'État non actualisé':p.status==='online'?'En ligne':p.status==='offline'?'Hors ligne':'État inconnu');if(b.textContent!==text)b.textContent=text;
  }
 }
 function loseAccess(){
+ abortRefresh();connectionHealthy=false;
  locked=true;cancelImages();drag=null;data={worlds:[],players:[]};viewReady=false;optionSignature='';
  select.replaceChildren();document.querySelector('#players').replaceChildren();draw();
  app.hidden=true;access.hidden=false;
  if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
 }
-async function refresh(){
+async function refresh(force=false){
+ if(networkDown||suspended||(!force&&(locked||clock()<retryAfter)))return;
+ if(force)abortRefresh();
  if(refreshing)return;
  refreshing=true;
- const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+ const request={controller:new AbortController(),timeout:0};
+ request.timeout=setTimeout(()=>request.controller.abort(),15000);activeRequest=request;
  try{
-  const r=await fetch('/api/state',{cache:'no-store',signal:controller.signal});
+  const r=await fetch('/api/state',{cache:'no-store',signal:request.controller.signal});
+  if(activeRequest!==request)return;
   if(r.status===401||r.status===403){loseAccess();return;}
   if(!r.ok)throw Error('Relevé indisponible');
   const next=validate(await r.json());
-  data=next;locked=false;app.hidden=false;access.hidden=true;
+  if(activeRequest!==request)return;
+  if(next.generatedAt!==lastGeneratedAt){lastGeneratedAt=next.generatedAt;lastExportChanged=clock();}
+  data=next;locked=false;connectionHealthy=true;refreshFailures=0;retryAfter=0;app.hidden=false;access.hidden=true;document.querySelector('#retry').hidden=true;
   const ids=new Set(data.worlds.map(w=>w.id));
   for(const[key,entry]of images)if(!ids.has(key.split('/')[1])){const busy=entry.busy;entry.cancel?.();if(busy)pending--;images.delete(key);}
   const signature=JSON.stringify(data.worlds.map(w=>[w.id,w.name]));
   if(signature!==optionSignature){select.replaceChildren(...data.worlds.map(w=>new Option(w.name,w.id)));optionSignature=signature;}
   if(!current()){world=data.worlds[0]?.id||'';viewReady=false;saveWorld();}
   select.value=world;if(!viewReady)center();
-  status.textContent=data.worlds.length?'Dernier relevé : '+new Date(data.generatedAt).toLocaleString():'Aucun monde disponible.';
+  status.textContent=data.worlds.length?(fresh()?'Dernier relevé : ':'Relevé non actualisé · ')+new Date(data.generatedAt).toLocaleString():'Aucun monde disponible.';
   playerButtons();requestDraw();
- }catch(e){if(!locked)status.textContent='Connexion interrompue ou relevé indisponible · Nouvelle tentative automatique. Le dernier terrain reste affiché.';}
- finally{clearTimeout(timeout);refreshing=false;}
+ }catch(e){
+  if(activeRequest!==request)return;
+  connectionHealthy=false;pauseImages();refreshFailures++;
+  retryAfter=clock()+Math.min(60000,10000*2**Math.min(3,refreshFailures-1));showConnectionProblem();
+ }
+ finally{clearTimeout(request.timeout);if(activeRequest===request){activeRequest=null;refreshing=false;}}
+}
+function resume(){
+ suspended=false;networkDown=navigator.onLine===false;
+ if(networkDown){showConnectionProblem();return;}
+ connectionHealthy=false;pauseImages();retryAfter=0;refreshFailures=0;
+ for(const entry of images.values()){entry.retry=0;entry.failures=0;}
+ showConnectionProblem();refresh(true);
 }
 function scale(f,x=canvas.width/2,y=canvas.height/2){if(locked)return;const next=Math.max(.125,Math.min(16,zoom*f));pan.x+=(x-canvas.width/2)*(1/zoom-1/next);pan.z+=(y-canvas.height/2)*(1/zoom-1/next);zoom=next;requestDraw();}
 select.onchange=()=>{if(locked)return;world=select.value;center();saveWorld();};
 document.querySelector('#minus').onclick=()=>scale(.5);document.querySelector('#plus').onclick=()=>scale(2);document.querySelector('#center').onclick=center;
 document.querySelector('#reconnect').onclick=()=>location.reload();
+document.querySelector('#retry').onclick=resume;
 document.querySelector('#full').onclick=async()=>{if(locked)return;try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('#map').requestFullscreen();}catch{status.textContent='Plein écran indisponible dans ce navigateur.';}};
 canvas.addEventListener('wheel',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();scale(e.deltaY<0?1.25:.8,e.clientX-r.left,e.clientY-r.top);},{passive:false});
 canvas.onpointerdown=e=>{if(locked)return;canvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY};};
 canvas.onpointermove=e=>{if(drag&&!locked){pan.x-=(e.clientX-drag.x)/zoom;pan.z-=(e.clientY-drag.y)/zoom;drag={x:e.clientX,y:e.clientY};requestDraw();}};
 canvas.onpointerup=canvas.onpointercancel=canvas.onlostpointercapture=()=>drag=null;
 window.addEventListener('resize',requestDraw);
+window.addEventListener('offline',()=>{networkDown=true;connectionHealthy=false;abortRefresh();pauseImages();showConnectionProblem();});
+window.addEventListener('online',resume);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resume();});
+window.addEventListener('pagehide',()=>{suspended=true;loseAccess();});
+window.addEventListener('pageshow',event=>{if(event.persisted)resume();});
 document.addEventListener('fullscreenchange',()=>{const active=!!document.fullscreenElement;document.querySelector('#full').textContent=active?'⛶ Quitter le plein écran':'⛶ Plein écran';document.querySelector('#full').setAttribute('aria-pressed',String(active));requestDraw();});
-setInterval(refresh,10000);setInterval(requestDraw,11000);refresh();
+setInterval(refresh,10000);setInterval(()=>{playerButtons();requestDraw();},11000);refresh();
