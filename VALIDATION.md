@@ -1,6 +1,14 @@
-# Validation 0.1.4
+# Validation 0.1.5
 
 Version initiale expérimentale, pas une garantie d’absence de bug.
+
+## Audit 0.1.5 (21 octobre 2026)
+
+- Blocage reproduit sur 0.1.4 dans trois tests avant correction : déplacement et zoom au sein d’une dimension gardaient les douze places occupées par des images hors écran. Une ancienne réponse pouvait donc encore être acceptée après le déplacement. Les demandes obsolètes sont maintenant annulées, sans supprimer les images décodées.
+- `node tests/viewport-network.cjs` : déplacement, zoom, cache préservé et anciens callbacks ignorés. Les trente régressions précédentes passent ; quatre contextes de 180 cycles et quatre contextes de 24 heures virtuelles passent également.
+- `node tests/rapid-soak.cjs` : six contextes, 72 heures **virtuelles** chacun, 4320 pas d’une minute, doubles changements de dimension, déplacements/zooms, pannes, cache de navigation, 401/503 et reprise finale. 19656 relevés servis, 412232 callbacks d’images différés, 147496 chargements simulés réussis, au plus douze requêtes pendantes, 120 entrées de cache et quatorze temporisations dans cette fixture. Ce n’est ni 72 heures physiques ni une mesure mémoire réelle du navigateur.
+- Les compteurs du laboratoire ont d’abord révélé une fixture qui laissait expirer toutes les images avant réponse : corrigée pour exercer aussi des chargements réussis ; aucune conclusion sur le plugin tirée de ce défaut de fixture.
+- Calcul de terrain, priorité réel/aperçu et permissions inchangés. Aucune donnée de production ni modification du VPS.
 
 ## Audit 0.1.4 (21 octobre 2026)
 

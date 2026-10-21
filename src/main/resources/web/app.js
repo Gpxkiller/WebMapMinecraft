@@ -26,9 +26,14 @@ function pauseImages(){
  drag=null;
  for(const entry of images.values())if(entry.busy){entry.cancel?.();pending--;}
 }
-function releaseOtherWorldDownloads(){
- // Preserve decoded terrain, while freeing slots held by a previous dimension.
- for(const[key,entry]of images)if(key.split('/')[1]!==world&&entry.busy){entry.cancel?.();pending--;}
+function releaseObsoleteDownloads(){
+ // Keep decoded terrain. Only unfinished downloads outside the current view
+ // are canceled: a slow old viewport must not block the new one for 15 seconds.
+ for(const[key,entry]of images)if(entry.busy){
+  const[kind,id,position]=key.split('/'),[x,z]=position.split('_').map(Number),span=kind==='preview'?256:16;
+  const left=canvas.width/2+(x*span-pan.x)*zoom,top=canvas.height/2+(z*span-pan.z)*zoom;
+  if(id!==world||left+span*zoom<=0||top+span*zoom<=0||left>=canvas.width||top>=canvas.height){entry.cancel?.();pending--;}
+ }
 }
 function abortRefresh(){
  if(activeRequest){clearTimeout(activeRequest.timeout);activeRequest.controller.abort();activeRequest=null;}
@@ -78,14 +83,14 @@ function previewInRange(w,x,z){
  return data.players.some(p=>p.world===w.id&&Math.max(Math.abs(x-Math.floor(p.x/256)),Math.abs(z-Math.floor(p.z/256)))<=2);
 }
 function draw(){
- releaseOtherWorldDownloads();
  const b=canvas.getBoundingClientRect();
  if(canvas.width!==Math.round(b.width)||canvas.height!==Math.round(b.height)){canvas.width=Math.round(b.width);canvas.height=Math.round(b.height);}
+ releaseObsoleteDownloads();
  ctx.fillStyle='#101d25';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;
  const w=current();if(locked||!w)return;
  const bounds=span=>[Math.floor((pan.x-canvas.width/2/zoom)/span),Math.ceil((pan.x+canvas.width/2/zoom)/span),Math.floor((pan.z-canvas.height/2/zoom)/span),Math.ceil((pan.z+canvas.height/2/zoom)/span)];
  const[l,r,t,bottom]=bounds(16);
- const real=w.tiles.map(key=>key.split('_').map(Number)).filter(([x,z])=>x>=l&&x<=r&&z>=t&&z<=bottom);
+ const real=w.tiles.map(key=>key.split('_').map(Number)).filter(([x,z])=>x>=l&&x<r&&z>=t&&z<bottom);
  // Reserve download slots for real terrain BEFORE previews. Paint real LAST.
  for(const[x,z]of real)tile('tile',w.id,x,z,data.generatedAt);
  const paint=(kind,x,z,span,revision)=>{
@@ -93,7 +98,7 @@ function draw(){
   if(im){ctx.globalAlpha=kind==='preview'?.75:1;ctx.drawImage(im,canvas.width/2+(x*span-pan.x)*zoom,canvas.height/2+(z*span-pan.z)*zoom,span*zoom,span*zoom);ctx.globalAlpha=1;}
  };
  const[a,bx,c,d]=bounds(256),preview=[];
- for(let z=c;z<=d;z++)for(let x=a;x<=bx;x++)if(previewInRange(w,x,z))preview.push([x,z]);
+ for(let z=c;z<d;z++)for(let x=a;x<bx;x++)if(previewInRange(w,x,z))preview.push([x,z]);
  preview.sort((a,b)=>Math.abs(a[0]-pan.x/256)+Math.abs(a[1]-pan.z/256)-Math.abs(b[0]-pan.x/256)-Math.abs(b[1]-pan.z/256));
  for(const[x,z]of preview.slice(0,2048))paint('preview',x,z,256,1);
  for(const[x,z]of real)paint('tile',x,z,16,data.generatedAt);

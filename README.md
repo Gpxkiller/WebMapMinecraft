@@ -1,7 +1,7 @@
 # WebMapMinecraft
 
 Carte web privée et en lecture seule pour serveur **Paper Minecraft 26.3 / Java 25+**.
-Version initiale expérimentale 0.1.4, licence MIT. Pas de dépendance à un hébergeur web tiers.
+Version initiale expérimentale 0.1.5, licence MIT. Pas de dépendance à un hébergeur web tiers.
 
 - Terrain réel exporté depuis les chunks **déjà chargés**, sans en charger ni en générer.
 - Aperçu facultatif par seed : relief/côtes Overworld, biomes Nether/End, par calcul numérique sans démarrer Minecraft.
@@ -13,7 +13,7 @@ Version initiale expérimentale 0.1.4, licence MIT. Pas de dépendance à un hé
 ## Installer
 
 1. Compiler avec Maven et un JDK 25+ : `mvn package`.
-2. Copier `target/webmap-minecraft-0.1.4.jar` dans `plugins/`.
+2. Copier `target/webmap-minecraft-0.1.5.jar` dans `plugins/`.
 3. Définir `WEBMAP_PASSWORD` (au moins 16 caractères) dans l’environnement du processus serveur. Ne pas le mettre dans un dépôt, une URL ou une commande partagée. Nom de connexion par défaut : `admin`.
 4. Redémarrer officiellement **lorsque le serveur est vide**. Aucun reload forcé.
 5. Mettre un reverse proxy HTTPS devant `127.0.0.1:9127`. L’accès HTTP local est protégé par authentification Basic ; **ne jamais l’exposer directement sur Internet sans TLS**. Voir `deploy/nginx.conf.example`.
@@ -45,6 +45,8 @@ Les images sont conservées pendant leur remplacement, même après erreur rése
 La dimension choisie est conservée dans l’adresse de chaque onglet, y compris après rechargement ou reconnexion. Une coupure réseau garde le dernier terrain affiché avec un avertissement et une nouvelle tentative automatique. Une requête bloquée est annulée après 15 secondes. Si l’accès est refusé (401/403), carte, noms et images en mémoire sont effacés ; seul le panneau de reconnexion reste visible. Le bouton « Se reconnecter » recharge la page et utilise l’authentification HTTP du navigateur : il ne stocke aucun mot de passe dans le code ou dans le stockage web.
 
 Les téléchargements du terrain réel ont la priorité sur l’aperçu. L’aperçu n’est demandé que s’il est activé et dans les zones de calcul automatique. Les réglages du serveur nécessitent un redémarrage officiel à vide, pas un rechargement forcé.
+
+Déplacement, zoom ou changement de dimension : les téléchargements encore bloqués hors du nouvel écran sont annulés pour libérer les places immédiatement. Les images déjà reçues restent en cache ; les réponses tardives annulées ne peuvent pas modifier le compteur de téléchargements.
 
 ### Onglets laissés ouverts et coupures prolongées
 

@@ -1,5 +1,11 @@
 # Changements
 
+## 0.1.5 — 21 octobre 2026
+
+- Déplacement et zoom : libération des téléchargements hors du nouvel écran, y compris dans une même dimension. Les images déjà reçues ne sont pas effacées.
+- Élimination des demandes d’images situées exactement au-delà du bord droit/bas de la carte.
+- Trois régressions supplémentaires et campagne de six onglets sur 72 heures virtuelles chacun : changements rapides de dimension, coupures, erreurs, refus d’accès et réponses d’images tardives après annulation.
+
 ## 0.1.4 — 21 octobre 2026
 
 - Un changement de dimension ou un clic sur un joueur libère les téléchargements encore bloqués de l’ancienne dimension, sans supprimer le terrain déjà décodé.
