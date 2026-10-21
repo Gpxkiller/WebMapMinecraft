@@ -21,6 +21,7 @@ jobs:
       - run: node tests/long-session.cjs
       - run: node tests/navigation-network.cjs
       - run: node tests/viewport-network.cjs
+      - run: node tests/dimension-races.cjs
       - run: node tests/soak.cjs
       - run: node tests/rapid-soak.cjs
       - run: python3 tests/worker_reconnect.py

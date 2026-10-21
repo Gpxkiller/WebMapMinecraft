@@ -1,5 +1,11 @@
 # Changements
 
+## 0.1.6 — 21 octobre 2026
+
+- Version de validation renforcée, sans nouveau défaut confirmé ni changement fonctionnel par rapport à 0.1.5.
+- Huit scénarios supplémentaires : 500 changements avant affichage, six onglets hors ligne avec 500 changements chacun, sélection pendant actualisation, anciens callbacks d’images, refus d’accès pendant navigation, JSON tardif après reconnexion, ancien clic joueur et retour du cache de navigation.
+- Les campagnes longues multi-onglets et les tests précédents restent exécutés automatiquement avant publication.
+
 ## 0.1.5 — 21 octobre 2026
 
 - Déplacement et zoom : libération des téléchargements hors du nouvel écran, y compris dans une même dimension. Les images déjà reçues ne sont pas effacées.

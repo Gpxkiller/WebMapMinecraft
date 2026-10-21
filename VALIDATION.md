@@ -1,6 +1,13 @@
-# Validation 0.1.5
+# Validation 0.1.6
 
 Version initiale expérimentale, pas une garantie d’absence de bug.
+
+## Audit 0.1.6 (21 octobre 2026)
+
+- Aucun nouveau défaut confirmé : comportement du navigateur, du plugin et du calcul inchangé par rapport à 0.1.5. Cette publication ajoute des preuves de non-régression, pas des corrections inventées.
+- `node tests/dimension-races.cjs` ajoute huit cas : 500 changements avant animation, six onglets hors ligne avec 500 changements chacun puis reconnexion indépendante, changement pendant réponse de relevé et réorganisation des mondes, 300 changements avec anciens callbacks, refus 403 pendant navigation, JSON ancien après coupure/reconnexion, clic d’un joueur retiré et restauration du cache avec mondes réordonnés.
+- 41 scénarios ciblés passent (33 précédents + 8 nouveaux), ainsi que quatre contextes de 180 cycles, quatre onglets de 24 heures virtuelles et six onglets de 72 heures virtuelles chacun. Cette dernière campagne conserve 19656 relevés, 412232 callbacks différés, 147496 chargements simulés réussis ; limites observées : douze téléchargements, 120 entrées de cache et quatorze temporisations dans la fixture.
+- Ce ne sont pas des sessions physiques de 72 heures. Pas de donnée de production, pas de modification VPS ; la préversion reste expérimentale et les limites de calcul du terrain restent inchangées.
 
 ## Audit 0.1.5 (21 octobre 2026)
 
